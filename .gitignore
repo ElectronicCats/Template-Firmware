@@ -1,0 +1,11 @@
+# Visual Studio Code config files
+.vscode/
+
+# macOS folder attributes
+/**/.DS_Store
+
+# Firmware binaries
+/**/build/
+
+# IDF components
+/**/managed_components/
