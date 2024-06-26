@@ -1,4 +1,4 @@
-# Visual Studio Code config files
+# Visual Studio config files
 .vscode/
 
 # macOS folder attributes
@@ -6,6 +6,9 @@
 
 # Firmware binaries
 /**/build/
-
-# IDF components
 /**/managed_components/
+
+# IDF sdkconfig
+/**/sdkconfig
+/**/sdkconfig.old
+/**/dependencies.lock
