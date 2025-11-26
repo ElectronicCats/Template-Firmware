@@ -342,7 +342,15 @@ jobs:
           - If BLOCKING_REVIEW is true and any 🚨 or 🔒 issues were posted: echo "CRITICAL_ISSUES_FOUND=true" >> $GITHUB_ENV
           - Otherwise: echo "CRITICAL_ISSUES_FOUND=false" >> $GITHUB_ENV
           - Always set CRITICAL_ISSUES_FOUND at the end
-          '
+          ' || {
+            EXIT_CODE=$?
+            echo "❌ Error: cursor-agent failed with exit code $EXIT_CODE"
+            echo "Model used: $MODEL"
+            echo "Check CURSOR_API_KEY and model availability"
+            exit $EXIT_CODE
+          }
+          
+          echo "✅ Code review completed successfully"
 
       - name: Check blocking review results
         if: env.BLOCKING_REVIEW == 'true'
