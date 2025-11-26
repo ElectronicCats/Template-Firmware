@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     
-    # Concurrencia: evitar múltiples ejecuciones simultáneas del mismo PR
+    # Concurrency: prevent multiple simultaneous runs of the same PR
     concurrency:
       group: code-review-${{ github.event.pull_request.number }}
       cancel-in-progress: true
@@ -37,7 +37,10 @@ jobs:
 
       - name: Validate required secrets
         run: |
-          if [ -z "${{ secrets.CURSOR_API_KEY }}" ]; then
+          # Safer method: check if secret exists without exposing its value
+          # GitHub Actions treats empty secrets as empty string, so we check for non-empty
+          SECRET_CHECK="${{ secrets.CURSOR_API_KEY }}"
+          if [ -z "$SECRET_CHECK" ]; then
             echo "::error::CURSOR_API_KEY secret is not configured"
             echo "Please configure it in: Settings > Secrets and variables > Actions"
             exit 1
@@ -119,8 +122,8 @@ jobs:
           
           if [ $PR_VIEW_EXIT_CODE -ne 0 ]; then
             echo "::error::Failed to fetch PR data"
-            # Mask any potential secrets in error output
-            echo "$PR_DATA" | sed 's/\(CURSOR_API_KEY\|GH_TOKEN\|[A-Za-z0-9_-]*TOKEN[A-Za-z0-9_-]*\)=.*/\1=***/g'
+            # Improved secret masking: match common secret patterns
+            echo "$PR_DATA" | sed -E 's/([A-Z_]*API[_-]?KEY|[A-Z_]*TOKEN|password|secret|credential|auth[_-]?token)=[^[:space:]]+/\1=***/gi'
             exit 1
           fi
           
@@ -132,8 +135,8 @@ jobs:
           # Validate numeric values
           if ! [[ "$ADDITIONS" =~ ^[0-9]+$ ]] || ! [[ "$DELETIONS" =~ ^[0-9]+$ ]] || ! [[ "$FILES" =~ ^[0-9]+$ ]]; then
             echo "::error::Invalid PR metrics received"
-            # Mask potential secrets in output
-            echo "$PR_DATA" | sed 's/\(CURSOR_API_KEY\|GH_TOKEN\|[A-Za-z0-9_-]*TOKEN[A-Za-z0-9_-]*\)=.*/\1=***/g'
+            # Improved secret masking
+            echo "$PR_DATA" | sed -E 's/([A-Z_]*API[_-]?KEY|[A-Z_]*TOKEN|password|secret|credential|auth[_-]?token)=[^[:space:]]+/\1=***/gi'
             exit 1
           fi
           
@@ -368,9 +371,14 @@ jobs:
 
           Blocking behavior:
           - Count critical (🚨) and security (🔒) issues found
-          - If BLOCKING_REVIEW is true and any 🚨 or 🔒 issues were posted: echo "CRITICAL_ISSUES_FOUND=true" >> $GITHUB_ENV
-          - Otherwise: echo "CRITICAL_ISSUES_FOUND=false" >> $GITHUB_ENV
-          - Always set CRITICAL_ISSUES_FOUND at the end
+          - If BLOCKING_REVIEW is true and any 🚨 or 🔒 issues were posted: 
+            * Set CRITICAL_ISSUES_FOUND=true using $GITHUB_ENV for GitHub Actions variable propagation
+            * Command: echo "CRITICAL_ISSUES_FOUND=true" >> $GITHUB_ENV
+          - Otherwise: 
+            * Set CRITICAL_ISSUES_FOUND=false using $GITHUB_ENV
+            * Command: echo "CRITICAL_ISSUES_FOUND=false" >> $GITHUB_ENV
+          - Always set CRITICAL_ISSUES_FOUND at the end of review
+          - Use $GITHUB_ENV file to ensure variable is available to subsequent workflow steps
           ' || {
             EXIT_CODE=$?
             echo "::error::cursor-agent failed with exit code $EXIT_CODE"
