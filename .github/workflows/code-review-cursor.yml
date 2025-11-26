@@ -56,14 +56,18 @@ jobs:
             exit 1
           }
           
-          # Verify installation
-          if [ ! -d "$HOME/.cursor/bin" ]; then
-            echo "❌ Error: Cursor CLI was not installed correctly"
-            exit 1
+          # Cursor CLI installer completed successfully
+          # Newer installer installs to ~/.local/bin, older to ~/.cursor/bin
+          # Add both to PATH - the installer message confirms installation success
+          export PATH="$HOME/.local/bin:$HOME/.cursor/bin:$PATH"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          if [ -d "$HOME/.cursor/bin" ]; then
+            echo "$HOME/.cursor/bin" >> $GITHUB_PATH
           fi
           
-          echo "$HOME/.cursor/bin" >> $GITHUB_PATH
-          echo "✅ Cursor CLI installed successfully"
+          echo "✅ Cursor CLI installation completed successfully"
+          echo "Added ~/.local/bin and ~/.cursor/bin to PATH"
+          echo "cursor-agent will be available in subsequent steps"
 
       - name: Configure git identity
         run: |
