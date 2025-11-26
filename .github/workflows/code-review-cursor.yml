@@ -143,30 +143,30 @@ jobs:
           echo "  Total changes: $TOTAL_LINES lines"
           echo "  Files changed: $FILES"
           
-          # Selección automática basada en tamaño y complejidad
-          # PRIORIDAD: Claude (Sonnet/Opus) siempre primero > GPT como fallback > Gemini como último recurso
-          # Modelos disponibles en Cursor: sonnet-4.5, opus-4.5, gpt-5, gemini-3-pro
-          # PR pequeño: cambios menores, pocos archivos
+          # Automatic selection based on PR size and complexity
+          # PRIORITY: Claude (Sonnet/Opus) always first > GPT as fallback > Gemini as last resort
+          # Available models in Cursor: sonnet-4.5, opus-4.5, gpt-5, gemini-3-pro
+          # Small PR: minor changes, few files
           if [ "$TOTAL_LINES" -lt 500 ] && [ "$FILES" -lt 10 ]; then
             SELECTED_MODEL="sonnet-4.5"
             REASON="Small PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
           
-          # PR mediano-pequeño: cambios moderados
+          # Small-medium PR: moderate changes
           elif [ "$TOTAL_LINES" -lt 1500 ] && [ "$FILES" -lt 25 ]; then
             SELECTED_MODEL="sonnet-4.5"
             REASON="Medium PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
           
-          # PR mediano-grande: cambios significativos
+          # Medium-large PR: significant changes
           elif [ "$TOTAL_LINES" -lt 3000 ] && [ "$FILES" -lt 40 ]; then
             SELECTED_MODEL="sonnet-4.5"
             REASON="Large PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
           
-          # PR grande: muchos cambios y archivos
+          # Large PR: many changes and files
           elif [ "$TOTAL_LINES" -lt 10000 ] && [ "$FILES" -lt 60 ]; then
             SELECTED_MODEL="opus-4.5"
             REASON="Very large PR: Claude Opus (priority), fallback: GPT-5-high, then Gemini-3-pro"
           
-          # PR masivo: cambios extremos - Opus primero, luego GPT-5-high, finalmente Gemini
+          # Massive PR: extreme changes - Opus first, then GPT-5-high, finally Gemini
           else
             SELECTED_MODEL="opus-4.5"
             REASON="Massive PR: Claude Opus (priority), fallback: GPT-5-high, then Gemini-3-pro"
@@ -182,10 +182,10 @@ jobs:
           MODEL: ${{ steps.select-model.outputs.MODEL }}
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
         run: |
-          echo "Validating model availability: $MODEL"
-          # Note: Actual model validation would require calling Cursor API
-          # For now, we log the model and continue
-          echo "Model to use: $MODEL"
+          echo "Selected model: $MODEL"
+          # Note: Full model validation would require calling Cursor API to check availability.
+          # The model will be validated when cursor-agent runs - if invalid, it will fail with a clear error.
+          # This step logs the selected model for visibility in the workflow run.
           echo "MODEL_VALIDATED=true" >> $GITHUB_OUTPUT
 
       - name: Perform automated code review with Cursor
