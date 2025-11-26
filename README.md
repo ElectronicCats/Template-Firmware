@@ -1,5 +1,7 @@
 # Template-Firmware
 
+[![AI Code Review](https://github.com/ElectronicCats/Template-Firmware/actions/workflows/code-review-cursor.yml/badge.svg)](https://github.com/ElectronicCats/Template-Firmware/actions/workflows/code-review-cursor.yml)
+
 ## Cómo usar esta plantilla
 
 La mayoría de los proyectos de Electronic Cats tienen la siguiente estructura de directorios:
