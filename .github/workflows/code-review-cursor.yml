@@ -38,28 +38,44 @@ jobs:
       - name: Validate required secrets
         run: |
           if [ -z "${{ secrets.CURSOR_API_KEY }}" ]; then
-            echo "❌ Error: CURSOR_API_KEY secret is not configured"
+            echo "::error::CURSOR_API_KEY secret is not configured"
             echo "Please configure it in: Settings > Secrets and variables > Actions"
             exit 1
           fi
           echo "✅ CURSOR_API_KEY is configured"
 
       - name: Install Cursor CLI
+        timeout-minutes: 5
+        continue-on-error: false
         run: |
           # Download and verify Cursor CLI installation script
           INSTALL_URL="https://cursor.com/install"
           echo "Downloading Cursor CLI installer..."
-          curl -fsSL "$INSTALL_URL" -o /tmp/cursor-install.sh
+          
+          # Download with timeout protection
+          curl --max-time 300 --connect-timeout 30 -fsSL "$INSTALL_URL" -o /tmp/cursor-install.sh
+          
+          # Verify download integrity (check file exists and is not empty)
+          if [ ! -s /tmp/cursor-install.sh ]; then
+            echo "::error::Failed to download Cursor CLI installer (file is empty)"
+            exit 1
+          fi
           
           # Basic validation: check if script contains expected content
           if ! grep -q "cursor" /tmp/cursor-install.sh 2>/dev/null; then
-            echo "❌ Error: Failed to download valid Cursor CLI installer"
+            echo "::error::Failed to download valid Cursor CLI installer (invalid content)"
+            exit 1
+          fi
+          
+          # Verify script is executable and has valid shebang
+          if ! head -1 /tmp/cursor-install.sh | grep -qE "^#!/(bin|usr)/.*sh"; then
+            echo "::error::Downloaded file does not appear to be a valid shell script"
             exit 1
           fi
           
           # Execute installer with error handling
           bash /tmp/cursor-install.sh || {
-            echo "❌ Error: Failed to install Cursor CLI"
+            echo "::error::Failed to install Cursor CLI"
             exit 1
           }
           
@@ -102,8 +118,9 @@ jobs:
           set -e
           
           if [ $PR_VIEW_EXIT_CODE -ne 0 ]; then
-            echo "❌ Error: Failed to fetch PR data"
-            echo "$PR_DATA"
+            echo "::error::Failed to fetch PR data"
+            # Mask any potential secrets in error output
+            echo "$PR_DATA" | sed 's/\(CURSOR_API_KEY\|GH_TOKEN\|[A-Za-z0-9_-]*TOKEN[A-Za-z0-9_-]*\)=.*/\1=***/g'
             exit 1
           fi
           
@@ -114,8 +131,9 @@ jobs:
           
           # Validate numeric values
           if ! [[ "$ADDITIONS" =~ ^[0-9]+$ ]] || ! [[ "$DELETIONS" =~ ^[0-9]+$ ]] || ! [[ "$FILES" =~ ^[0-9]+$ ]]; then
-            echo "❌ Error: Invalid PR metrics received"
-            echo "PR_DATA: $PR_DATA"
+            echo "::error::Invalid PR metrics received"
+            # Mask potential secrets in output
+            echo "$PR_DATA" | sed 's/\(CURSOR_API_KEY\|GH_TOKEN\|[A-Za-z0-9_-]*TOKEN[A-Za-z0-9_-]*\)=.*/\1=***/g'
             exit 1
           fi
           
@@ -355,9 +373,9 @@ jobs:
           - Always set CRITICAL_ISSUES_FOUND at the end
           ' || {
             EXIT_CODE=$?
-            echo "❌ Error: cursor-agent failed with exit code $EXIT_CODE"
+            echo "::error::cursor-agent failed with exit code $EXIT_CODE"
             echo "Model used: $MODEL"
-            echo "Check CURSOR_API_KEY and model availability"
+            echo "Check CURSOR_API_KEY configuration and model availability"
             exit $EXIT_CODE
           }
           
@@ -367,7 +385,7 @@ jobs:
         if: env.BLOCKING_REVIEW == 'true'
         run: |
           if [ "${CRITICAL_ISSUES_FOUND:-false}" = "true" ]; then
-            echo "❌ Critical issues found and blocking review is enabled. Failing the workflow."
+            echo "::error::Critical issues found and blocking review is enabled. Failing the workflow."
             exit 1
           else
             echo "✅ No blocking issues found."
