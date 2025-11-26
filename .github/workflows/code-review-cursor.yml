@@ -217,7 +217,7 @@ jobs:
           Procedure:
           - Get existing comments: gh pr view --json comments
           - Get diff: gh pr diff
-          - Get changed files with patches: gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files --paginate --jq '".[] | {filename,patch}"'
+          - Get changed files with patches: gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files --paginate --jq '.[] | {filename,patch}'
           - Compute exact inline anchors for each issue (file path + diff position).
           - Comments MUST be placed inline on the changed line in the diff, not as top-level comments.
           - Focus on files with extensions: .c, .cpp, .h, .hpp, .cc, .cxx
