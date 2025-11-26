@@ -26,11 +26,44 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Validate required secrets
+        run: |
+          if [ -z "${{ secrets.CURSOR_API_KEY }}" ]; then
+            echo "❌ Error: CURSOR_API_KEY secret is not configured"
+            echo "Please configure it in: Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          echo "✅ CURSOR_API_KEY is configured"
 
       - name: Install Cursor CLI
         run: |
-          curl https://cursor.com/install -fsS | bash
+          # Download and verify Cursor CLI installation script
+          INSTALL_URL="https://cursor.com/install"
+          echo "Downloading Cursor CLI installer..."
+          curl -fsSL "$INSTALL_URL" -o /tmp/cursor-install.sh
+          
+          # Basic validation: check if script contains expected content
+          if ! grep -q "cursor" /tmp/cursor-install.sh 2>/dev/null; then
+            echo "❌ Error: Failed to download valid Cursor CLI installer"
+            exit 1
+          fi
+          
+          # Execute installer with error handling
+          bash /tmp/cursor-install.sh || {
+            echo "❌ Error: Failed to install Cursor CLI"
+            exit 1
+          }
+          
+          # Verify installation
+          if [ ! -d "$HOME/.cursor/bin" ]; then
+            echo "❌ Error: Cursor CLI was not installed correctly"
+            exit 1
+          fi
+          
           echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+          echo "✅ Cursor CLI installed successfully"
 
       - name: Configure git identity
         run: |
