@@ -55,8 +55,28 @@ jobs:
           INSTALL_URL="https://cursor.com/install"
           echo "Downloading Cursor CLI installer..."
           
-          # Download with timeout protection
-          curl --max-time 300 --connect-timeout 30 -fsSL "$INSTALL_URL" -o /tmp/cursor-install.sh
+          # Download with timeout protection and retry logic
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          DOWNLOAD_SUCCESS=false
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$DOWNLOAD_SUCCESS" = "false" ]; do
+            if [ $RETRY_COUNT -gt 0 ]; then
+              echo "Retry attempt $RETRY_COUNT of $MAX_RETRIES..."
+              sleep 2
+            fi
+            
+            if curl --max-time 300 --connect-timeout 30 -fsSL "$INSTALL_URL" -o /tmp/cursor-install.sh; then
+              DOWNLOAD_SUCCESS=true
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            fi
+          done
+          
+          if [ "$DOWNLOAD_SUCCESS" = "false" ]; then
+            echo "::error::Failed to download Cursor CLI installer after $MAX_RETRIES attempts"
+            exit 1
+          fi
           
           # Verify download integrity (check file exists and is not empty)
           if [ ! -s /tmp/cursor-install.sh ]; then
@@ -75,6 +95,10 @@ jobs:
             echo "::error::Downloaded file does not appear to be a valid shell script"
             exit 1
           fi
+          
+          # Calculate and log checksum for verification (optional future enhancement: verify against known hash)
+          CHECKSUM=$(sha256sum /tmp/cursor-install.sh | cut -d' ' -f1)
+          echo "Downloaded installer checksum: $CHECKSUM"
           
           # Execute installer with error handling
           bash /tmp/cursor-install.sh || {
