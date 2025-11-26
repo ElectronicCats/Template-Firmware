@@ -84,12 +84,29 @@ jobs:
             exit 0
           fi
           
-          # Obtener métricas del PR
-          PR_DATA=$(gh pr view ${{ github.event.pull_request.number }} --json additions,deletions,files --jq '{additions, deletions, files: (.files | length)}')
-          ADDITIONS=$(echo $PR_DATA | jq -r '.additions')
-          DELETIONS=$(echo $PR_DATA | jq -r '.deletions')
-          FILES=$(echo $PR_DATA | jq -r '.files')
+          # Get PR metrics with error handling
+          set +e
+          PR_DATA=$(gh pr view ${{ github.event.pull_request.number }} --json additions,deletions,files --jq '{additions, deletions, files: (.files | length)}' 2>&1)
+          PR_VIEW_EXIT_CODE=$?
+          set -e
+          
+          if [ $PR_VIEW_EXIT_CODE -ne 0 ]; then
+            echo "❌ Error: Failed to fetch PR data"
+            echo "$PR_DATA"
+            exit 1
+          fi
+          
+          ADDITIONS=$(echo "$PR_DATA" | jq -r '.additions // 0')
+          DELETIONS=$(echo "$PR_DATA" | jq -r '.deletions // 0')
+          FILES=$(echo "$PR_DATA" | jq -r '.files // 0')
           TOTAL_LINES=$((ADDITIONS + DELETIONS))
+          
+          # Validate numeric values
+          if ! [[ "$ADDITIONS" =~ ^[0-9]+$ ]] || ! [[ "$DELETIONS" =~ ^[0-9]+$ ]] || ! [[ "$FILES" =~ ^[0-9]+$ ]]; then
+            echo "❌ Error: Invalid PR metrics received"
+            echo "PR_DATA: $PR_DATA"
+            exit 1
+          fi
           
           echo "PR Analysis:"
           echo "  Additions: $ADDITIONS lines"
