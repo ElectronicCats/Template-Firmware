@@ -367,6 +367,6 @@ jobs:
           MODEL_USED: ${{ steps.select-model.outputs.MODEL }}
           MODEL_REASON: ${{ steps.select-model.outputs.MODEL_REASON }}
         run: |
-          echo "✅ Code review con Cursor AI completado"
-          echo "Modelo utilizado: $MODEL_USED ($MODEL_REASON)"
-          echo "Revisa los comentarios en el Pull Request"
+          echo "✅ Code review with Cursor AI completed"
+          echo "Model used: $MODEL_USED ($MODEL_REASON)"
+          echo "Please review the comments in the Pull Request"
