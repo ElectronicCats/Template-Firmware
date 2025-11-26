@@ -3,6 +3,13 @@ name: AI Code Review (Cursor CLI)
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 'AI model to use (overrides auto-selection)'
+        required: false
+        type: string
+        default: 'auto'
 
 permissions:
   contents: read
@@ -77,10 +84,10 @@ jobs:
       - name: Select optimal AI model based on PR size
         id: select-model
         env:
-          MODEL_CONFIG: ${{ vars.MODEL || 'auto' }}
+          MODEL_CONFIG: ${{ github.event.inputs.model || vars.MODEL || 'auto' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Si MODEL está configurado manualmente y no es 'auto', usarlo directamente
+          # If MODEL is manually configured (via workflow_dispatch input or variable) and not 'auto', use it directly
           if [ "$MODEL_CONFIG" != "auto" ]; then
             echo "MODEL=$MODEL_CONFIG" >> $GITHUB_OUTPUT
             echo "MODEL_REASON=Manually configured" >> $GITHUB_OUTPUT
