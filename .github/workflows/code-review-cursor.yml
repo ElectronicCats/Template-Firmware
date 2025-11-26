@@ -173,30 +173,32 @@ jobs:
           # Automatic selection based on PR size and complexity
           # PRIORITY: Claude (Sonnet/Opus) always first > GPT as fallback > Gemini as last resort
           # Available models in Cursor: sonnet-4.5, opus-4.5, gpt-5, gemini-3-pro
-          # Small PR: minor changes, few files
-          if [ "$TOTAL_LINES" -lt 500 ] && [ "$FILES" -lt 10 ]; then
-            SELECTED_MODEL="sonnet-4.5"
-            REASON="Small PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
           
-          # Small-medium PR: moderate changes
-          elif [ "$TOTAL_LINES" -lt 1500 ] && [ "$FILES" -lt 25 ]; then
-            SELECTED_MODEL="sonnet-4.5"
-            REASON="Medium PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
+          # Refactor nested conditionals: use threshold-based selection
+          SELECTED_MODEL="sonnet-4.5"
+          REASON="Default: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
           
-          # Medium-large PR: significant changes
-          elif [ "$TOTAL_LINES" -lt 3000 ] && [ "$FILES" -lt 40 ]; then
-            SELECTED_MODEL="sonnet-4.5"
-            REASON="Large PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
-          
-          # Large PR: many changes and files
-          elif [ "$TOTAL_LINES" -lt 10000 ] && [ "$FILES" -lt 60 ]; then
-            SELECTED_MODEL="opus-4.5"
-            REASON="Very large PR: Claude Opus (priority), fallback: GPT-5-high, then Gemini-3-pro"
-          
-          # Massive PR: extreme changes - Opus first, then GPT-5-high, finally Gemini
-          else
+          # Determine model based on PR size thresholds
+          if [ "$TOTAL_LINES" -ge 10000 ] || [ "$FILES" -ge 60 ]; then
+            # Massive PR: extreme changes
             SELECTED_MODEL="opus-4.5"
             REASON="Massive PR: Claude Opus (priority), fallback: GPT-5-high, then Gemini-3-pro"
+          elif [ "$TOTAL_LINES" -ge 3000 ] || [ "$FILES" -ge 40 ]; then
+            # Large PR: many changes and files
+            SELECTED_MODEL="opus-4.5"
+            REASON="Very large PR: Claude Opus (priority), fallback: GPT-5-high, then Gemini-3-pro"
+          elif [ "$TOTAL_LINES" -ge 1500 ] || [ "$FILES" -ge 25 ]; then
+            # Medium-large PR: significant changes
+            SELECTED_MODEL="sonnet-4.5"
+            REASON="Large PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
+          elif [ "$TOTAL_LINES" -ge 500 ] || [ "$FILES" -ge 10 ]; then
+            # Small-medium PR: moderate changes
+            SELECTED_MODEL="sonnet-4.5"
+            REASON="Medium PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
+          else
+            # Small PR: minor changes, few files
+            SELECTED_MODEL="sonnet-4.5"
+            REASON="Small PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
           fi
           
           echo "Selected model: $SELECTED_MODEL ($REASON)"
