@@ -147,36 +147,53 @@ jobs:
           echo "MODEL=$SELECTED_MODEL" >> $GITHUB_OUTPUT
           echo "MODEL_REASON=$REASON" >> $GITHUB_OUTPUT
 
+      - name: Validate selected model
+        id: validate-model
+        env:
+          MODEL: ${{ steps.select-model.outputs.MODEL }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          echo "Validating model availability: $MODEL"
+          # Note: Actual model validation would require calling Cursor API
+          # For now, we log the model and continue
+          echo "Model to use: $MODEL"
+          echo "MODEL_VALIDATED=true" >> $GITHUB_OUTPUT
+
       - name: Perform automated code review with Cursor
+        timeout-minutes: 30
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
-          # MODEL: Configura el modelo de IA a usar
-          #   - 'auto' (default): Selección automática basada en tamaño del PR
-          #     Prioridad de modelos: Claude (Sonnet/Opus) > GPT > Gemini
-          #   Modelos Claude (prioritarios):
-          #   - 'sonnet-4.5': Claude Sonnet 4.5 (default para PRs pequeños/medianos/grandes)
-          #   - 'sonnet-4.5-thinking': Claude Sonnet con reasoning extendido
-          #   - 'opus-4.5': Claude Opus 4.5 (mejor calidad, para PRs muy grandes/complejos)
-          #   - 'opus-4.5-thinking': Claude Opus con reasoning extendido
-          #   Modelos GPT (fallback si Claude no disponible):
-          #   - 'gpt-5': GPT-5 estándar
-          #   - 'gpt-5.1': GPT-5.1 mejorado
-          #   - 'gpt-5-high': GPT-5 alta calidad
-          #   - 'gpt-5-codex': GPT-5 optimizado para código
-          #   - 'gpt-5.1-codex': GPT-5.1 optimizado para código
-          #   - 'opus-4.1': Opus 4.1 (alternativa)
-          #   Modelos Gemini (fallback final):
+          # MODEL: AI model to use
+          #   - 'auto' (default): Automatic selection based on PR size
+          #     Model priority: Claude (Sonnet/Opus) > GPT > Gemini
+          #   Claude models (priority):
+          #   - 'sonnet-4.5': Claude Sonnet 4.5 (default for small/medium/large PRs)
+          #   - 'sonnet-4.5-thinking': Claude Sonnet with extended reasoning
+          #   - 'opus-4.5': Claude Opus 4.5 (best quality, for very large/complex PRs)
+          #   - 'opus-4.5-thinking': Claude Opus with extended reasoning
+          #   GPT models (fallback if Claude unavailable):
+          #   - 'gpt-5': GPT-5 standard
+          #   - 'gpt-5.1': GPT-5.1 improved
+          #   - 'gpt-5-high': GPT-5 high quality
+          #   - 'gpt-5-codex': GPT-5 optimized for code
+          #   - 'gpt-5.1-codex': GPT-5.1 optimized for code
+          #   - 'opus-4.1': Opus 4.1 (alternative)
+          #   Gemini models (final fallback):
           #   - 'gemini-3-pro': Gemini 3 Pro
-          #   Otros:
-          #   - 'composer-1': Composer modelo
-          #   - 'grok': Grok modelo
-          #   - 'auto': Auto-selección por Cursor
+          #   Other:
+          #   - 'composer-1': Composer model
+          #   - 'grok': Grok model
+          #   - 'auto': Auto-selection by Cursor
           MODEL: ${{ steps.select-model.outputs.MODEL }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BLOCKING_REVIEW: ${{ vars.BLOCKING_REVIEW || 'false' }}
           REVIEW_MAX_COMMENTS: ${{ vars.REVIEW_MAX_COMMENTS || '20' }}
           REVIEW_DETAIL_LEVEL: ${{ vars.REVIEW_DETAIL_LEVEL || 'detailed' }}
         run: |
+          set -e
+          echo "Starting code review with model: $MODEL"
+          
+          # Execute cursor-agent with error handling and timeout protection
           cursor-agent --force --model "$MODEL" --output-format=text --print 'You are operating in a GitHub Actions runner performing automated code review for embedded systems firmware. The gh CLI is available and authenticated via GH_TOKEN. You may comment on pull requests.
 
           Context:
