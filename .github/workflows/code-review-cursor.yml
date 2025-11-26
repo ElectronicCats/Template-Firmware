@@ -31,7 +31,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          # Optimize: only fetch base and head commits for PR diff comparison
+          fetch-depth: ${{ github.event_name == 'pull_request' && '2' || '0' }}
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
