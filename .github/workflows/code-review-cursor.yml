@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           # Optimize: only fetch base and head commits for PR diff comparison
-          fetch-depth: 0
+          fetch-depth: 2
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
@@ -135,9 +135,10 @@ jobs:
         run: |
           MAX_BYTES=200000
 
-          if [ $(wc -c < /tmp/pr.diff) -gt $MAX_BYTES ]; then
-            head -c $MAX_BYTES /tmp/pr.diff > /tmp/pr.diff.trimmed
-            echo "Using trimmed diff"
+          DIFF_SIZE=$(wc -c < /tmp/pr.diff 2>/dev/null || echo 0)
+          if [ "$DIFF_SIZE" -gt "$MAX_BYTES" ]; then
+            git diff --unified=3 > /tmp/pr.diff
+            echo "Using git diff"
             echo "DIFF_FILE=/tmp/pr.diff.trimmed" >> $GITHUB_ENV
           else
             echo "Using full diff"
