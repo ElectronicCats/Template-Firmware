@@ -238,6 +238,8 @@ jobs:
             exit 1
           fi
           
+          # NOTE: kept explicit condition for clarity
+          
           # Replace placeholders with actual values (escaping special characters for sed)
           # Use different delimiter (|) to avoid conflicts with URLs and paths
           sed -e "s|{{REPO}}|$REPO|g" \
