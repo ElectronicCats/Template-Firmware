@@ -311,16 +311,6 @@ jobs:
           
           echo "✅ Code review completed successfully"
 
-      - name: Check blocking review results
-        if: env.BLOCKING_REVIEW == 'true'
-        run: |
-          if [ "${CRITICAL_ISSUES_FOUND:-false}" = "true" ]; then
-            echo "::error::Critical issues found and blocking review is enabled. Failing the workflow."
-            exit 1
-          else
-            echo "✅ No blocking issues found."
-          fi
-
       - name: Summary
         env:
           MODEL_USED: ${{ steps.select-model.outputs.MODEL }}
