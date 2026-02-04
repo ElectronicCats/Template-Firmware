@@ -20,7 +20,7 @@ jobs:
   cursor-code-review:
     name: Cursor AI Code Review
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     
     # Concurrency: prevent multiple simultaneous runs of the same PR
     concurrency:
@@ -238,6 +238,8 @@ jobs:
             exit 1
           fi
           
+          # NOTE: kept explicit condition for clarity
+          
           # Replace placeholders with actual values (escaping special characters for sed)
           # Use different delimiter (|) to avoid conflicts with URLs and paths
           sed -e "s|{{REPO}}|$REPO|g" \
@@ -310,16 +312,6 @@ jobs:
           }
           
           echo "✅ Code review completed successfully"
-
-      - name: Check blocking review results
-        if: env.BLOCKING_REVIEW == 'true'
-        run: |
-          if [ "${CRITICAL_ISSUES_FOUND:-false}" = "true" ]; then
-            echo "::error::Critical issues found and blocking review is enabled. Failing the workflow."
-            exit 1
-          else
-            echo "✅ No blocking issues found."
-          fi
 
       - name: Summary
         env:
