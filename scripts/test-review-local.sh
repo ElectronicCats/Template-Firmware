@@ -94,4 +94,3 @@ cursor-agent --force --model "sonnet-4.5" --output-format=text --print "$(cat $T
 rm -f "$TEMP_PROMPT"
 echo ""
 echo "✅ Test completed"
-
